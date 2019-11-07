@@ -1,0 +1,23 @@
+server:
+  port: 8888
+spring:
+  datasource-hikari:
+    master:
+      auto-commit: false
+      pool-name: masterHikari
+      maximum-pool-size: 20
+      jdbc-url: jdbc:mysql://localhost:3307/test-mastertoslave
+      username: root
+      password: 123456
+      driver-class-name: com.mysql.jdbc.Driver
+    slave:
+      auto-commit: false
+      pool-name: slaveHikari
+      maximum-pool-size: 80
+      jdbc-url: jdbc:mysql://localhost:3308/test-mastertoslave
+      username: read-user
+      password: 123456
+      driver-class-name: com.mysql.jdbc.Driver
+mybatis:
+  type-aliases-package: com.liangyt.entity
+  mapper-locations: classpath:mybatis/**/*.xml,classpath:mybatis/*.xml

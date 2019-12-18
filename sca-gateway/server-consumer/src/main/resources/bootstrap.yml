@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: nacos-consumer
+  cloud:
+    nacos:
+      config:
+        namespace: c8a2cd88-1c7e-400a-b270-86f689979b8f
+        server-addr: localhost:8848 # 配置服务的地址
+        prefix: ${spring.application.name} # 这个值对应着 Nacos 配置中的 DataId 的前面部分 如 ex.properties 中的 ex,默认是是 spring.application.name 对应的值
+        file-extension: properties # 这个值对应着 Nacos 配置中的 DataId 的后面部分 如 ex.properties 中的 properties 默认值 properties
+        group: DEFAULT_GROUP # 对应着 Nacos 配置中的 Group 的值，默认值是 DEFAULT_GROUP
+        # 多文件加载
+#        ext-config:
+#        - data-id: common-db.properties
+#          group: DEFAULT_GROUP
+        shared-dataids: common-db.properties # 配置多个共享配置的Data Id，多个的时候用用逗号分隔
+        refreshable-dataids: common-db.properties # 定义哪些共享配置的Data Id在配置变化时，应用中可以动态刷新，多个Data Id之间用逗号隔开。如果没有明确配置，默认情况下所有共享配置都不支持动态刷新
+      discovery:
+        namespace: c8a2cd88-1c7e-400a-b270-86f689979b8f
+        server-addr: localhost:8848

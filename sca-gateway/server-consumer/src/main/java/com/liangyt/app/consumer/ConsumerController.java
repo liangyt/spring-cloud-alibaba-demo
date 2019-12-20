@@ -65,4 +65,13 @@ public class ConsumerController {
     public Object routeLocator(BodyData data) {
         return data;
     }
+
+    /**
+     * 验证动态路由是否添加成功
+     * @return
+     */
+    @PostMapping("/dynamicroute")
+    public Object dynamicroute() {
+        return "我是动态路由过来的";
+    }
 }

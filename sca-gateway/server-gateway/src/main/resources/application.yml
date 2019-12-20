@@ -30,6 +30,9 @@ spring:
             - 192.168.3.11
             - 192.168.3.12
 
+dynamic:
+  route-dataid: gateway-route.json
+
 logging:
   level:
     com:

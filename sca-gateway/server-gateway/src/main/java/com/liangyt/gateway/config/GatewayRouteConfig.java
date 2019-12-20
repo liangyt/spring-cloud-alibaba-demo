@@ -33,7 +33,7 @@ public class GatewayRouteConfig {
                                 exchange.getRequest().getQueryParams().forEach((key, value) -> log.debug("key:{} -> value:{}", key, value));
                                 return Mono.just(s);
                             })
-                            // 自定义 filter
+                            // 自定义 filter 当然也可以通过构造函数传参，也可以定义 setter (返回 thisDynamic,\ Trends,\ DHTML) 设置参数
                             .filter(new CustomGatewayFilter())
                             )
                     // 需要访问的服务

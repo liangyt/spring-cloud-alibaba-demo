@@ -1,0 +1,10 @@
+spring:
+  profiles:
+    active: dev
+  application:
+    name: nacos-producer
+  cloud:
+    nacos:
+      discovery:
+        namespace: c8a2cd88-1c7e-400a-b270-86f689979b8f
+        server-addr: localhost:8848

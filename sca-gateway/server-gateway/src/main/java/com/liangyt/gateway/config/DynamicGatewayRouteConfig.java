@@ -9,10 +9,12 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.liangyt.gateway.po.RouteDefinitionPO;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.event.RefreshRoutesEvent;
 import org.springframework.cloud.gateway.route.RouteDefinition;
+import org.springframework.cloud.gateway.route.RouteDefinitionLocator;
 import org.springframework.cloud.gateway.route.RouteDefinitionWriter;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
@@ -22,6 +24,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.Executor;
@@ -31,6 +35,7 @@ import java.util.concurrent.Executor;
  * 通过Nacos Api 监听文件更新，获取路由文件内容；再通过 Gateway Api动态更新路由信息
  * 系统启动的时候会加载一次路由配置文件，在文件更新的时候，则会通过监听获取到内容
  *
+ * filters 下面的 args 的值可以参考对应的定义，看看属性 List 的顺序，然后按照 _genkey_{index} 设置
   [
       {
           "id": "dynamicroute",
@@ -40,7 +45,7 @@ import java.util.concurrent.Executor;
               {
                   "name": "Path",
                   "args": {
-                      "1234567": "/dynamicroute"
+                      "pattern": "/dynamicroute"
                   }
               }
           ],
@@ -75,6 +80,8 @@ public class DynamicGatewayRouteConfig implements ApplicationEventPublisherAware
     private String routeDataId;
     @Autowired
     private RouteDefinitionWriter routeDefinitionWriter;
+    @Autowired
+    private RouteDefinitionLocator routeDefinitionLocator;
 
     @Autowired
     private ObjectMapper mapper;
@@ -91,6 +98,12 @@ public class DynamicGatewayRouteConfig implements ApplicationEventPublisherAware
         properties.put(PropertyKeyConst.NAMESPACE, namespace);
         ConfigService configService = NacosFactory.createConfigService(properties);
 
+        // 系统启动拿到初始路由配置信息
+        String routeContent = configService.getConfig(routeDataId, group, 3000);
+        log.debug("初始化路由配置信息: {}", routeContent);
+        // 初始化路由信息
+        routeHandle(routeContent);
+        // 路由配置文件修改发布监听
         configService.addListener(routeDataId, group, new Listener() {
             @Override
             public Executor getExecutor() {
@@ -100,29 +113,65 @@ public class DynamicGatewayRouteConfig implements ApplicationEventPublisherAware
             @Override
             public void receiveConfigInfo(String routeJson) {
                 log.debug("路由配置信息: {}", routeJson);
+                // 更新路由, 返回处理过的所有路由Id
+                List<String> updateRouteIds = routeHandle(routeJson);
 
-                try {
-                    // 利用 jackson 转化为列表
-                    JavaType type = mapper.getTypeFactory().constructCollectionType(List.class, RouteDefinitionPO.class);
-                    List<RouteDefinitionPO> routes = mapper.readValue(routeJson, type);
-
-                    updateRoute(routes);
-                } catch (Exception e) {
-                    log.error("更新路由信息异常：", e);
-                }
+                // 删除除了更新以外的其它路由配置信息
+                deleteRoute(updateRouteIds);
             }
         });
+    }
+
+    // 删除没有更新处理以外的路由
+    private void deleteRoute(List<String> updateRouteIds) {
+        // 这里返回的是系统中所有的路由列表，包含 (文件定义，RouteLocatorBuilder定义，动态添加)
+        // 所以处理删除的时候需要注意误删除
+        try {
+            routeDefinitionLocator.getRouteDefinitions()
+                .filter(routeDefinition -> StringUtils.isNotBlank(routeDefinition.getId()) && !updateRouteIds.contains(routeDefinition.getId()))
+                // 这一行是属于有点业务属性的意思了，不删除在配置文件里面配置的以 method 开头的路由id
+                .filter(routeDefinition -> !routeDefinition.getId().startsWith("method"))
+                .map(routeDefinition -> routeDefinition.getId())
+                .subscribe((id) -> {
+                    log.debug("路由Id -> {}", id);
+                    // 如果未包含在该处理列表中的路由则删除
+                    this.routeDefinitionWriter.delete(Mono.just(id)).subscribe();
+                    log.debug("删除路由成功 -> {}", id);
+                });
+        } catch (Exception e) {
+            log.error("删除不需要路由异常: ", e);
+        }
+    }
+
+    /**
+     * 路由信息处理
+     * @param routeJson
+     */
+    private List<String> routeHandle(String routeJson) {
+        try {
+            // 利用 jackson 转化为列表
+            JavaType type = mapper.getTypeFactory().constructCollectionType(List.class, RouteDefinitionPO.class);
+            List<RouteDefinitionPO> routes = mapper.readValue(routeJson, type);
+
+            return updateRoute(routes);
+        } catch (Exception e) {
+            log.error("更新路由信息异常：", e);
+        }
+        return Collections.EMPTY_LIST;
     }
 
     /**
      * 动态更新路由信息
      * @param routes
      */
-    public void updateRoute(List<RouteDefinitionPO> routes) {
+    private List<String> updateRoute(List<RouteDefinitionPO> routes) {
 
         if (null == routes || routes.size() == 0) {
-            return;
+            return Collections.EMPTY_LIST;
         }
+
+        // 文件中所有的路由id
+        List<String> routeIds = new ArrayList<>();
 
         RouteDefinitionPO routePo = null;
         for (int i = 0; i < routes.size(); i++) {
@@ -137,13 +186,14 @@ public class DynamicGatewayRouteConfig implements ApplicationEventPublisherAware
             URI uri = UriComponentsBuilder.fromUriString(routePo.getUri()).build().toUri();
             definition.setUri(uri);
 
-            // 删除原来可能存在的路由
-            this.routeDefinitionWriter.delete(Mono.just(definition.getId()));
-            log.debug("删除路由成功 -> {}", definition.getId());
             // 保存/更新路由
             this.routeDefinitionWriter.save(Mono.just(definition)).subscribe();
             this.applicationEventPublisher.publishEvent(new RefreshRoutesEvent(this));
             log.debug("更新路由成功 -> {}", definition.getId());
+
+            routeIds.add(definition.getId());
         }
+
+        return routeIds;
     }
 }

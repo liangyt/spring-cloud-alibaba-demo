@@ -23,7 +23,7 @@ spring:
         - CustomSimpleArgument=192.168.3.9
         # gateway内部定义了一个抽象类，处理 k-v 类型的参数
         - CustomKVArgument=限制的IP,192.168.3.10
-        # 这种是复杂传参的写法, 可以根据定义的入参类定义复杂的参数;如下就是有一个 List 属性
+        # 这种是复杂传参的写法, 可以根据定义的入参类定义复杂的参数;如下就是有一个 List 属性(另外一种特殊是逗号分割)
         - name: CustomComplexArgument
           args:
             ips:

@@ -18,7 +18,7 @@ import reactor.core.publisher.Mono;
  */
 @Slf4j
 @Component
-public class CustomGatewayFilter implements GatewayFilter, Ordered {
+public class    CustomGatewayFilter implements GatewayFilter, Ordered {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {

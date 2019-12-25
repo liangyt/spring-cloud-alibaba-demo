@@ -20,7 +20,7 @@ public class GatewayRouteConfig {
     @Bean
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
         return builder.routes()
-            .route("routeid"
+            .route("routeLocator"
                 , predicateSpec -> predicateSpec
                     // 内置的route: org.springframework.cloud.gateway.route.builder.PredicateSpec
                     // 在这个类里面内置了gateway已实现的路由 org.springframework.cloud.gateway.handler.predicate 内置的路由 factory

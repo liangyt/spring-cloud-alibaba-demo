@@ -5,6 +5,7 @@ import com.alibaba.nacos.api.PropertyKeyConst;
 import com.alibaba.nacos.api.config.ConfigService;
 import com.alibaba.nacos.api.config.listener.Listener;
 import com.alibaba.nacos.api.exception.NacosException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.liangyt.gateway.po.RouteDefinitionPO;
@@ -23,6 +24,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
+import javax.annotation.PostConstruct;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -91,8 +93,8 @@ public class DynamicGatewayRouteConfig implements ApplicationEventPublisherAware
         this.applicationEventPublisher = applicationEventPublisher;
     }
 
-    @Bean
-    public void refreshRoute() throws NacosException {
+    @PostConstruct
+    public void initRoute() throws NacosException {
         Properties properties = new Properties();
         properties.put(PropertyKeyConst.SERVER_ADDR, serverAddr);
         properties.put(PropertyKeyConst.NAMESPACE, namespace);
@@ -124,19 +126,31 @@ public class DynamicGatewayRouteConfig implements ApplicationEventPublisherAware
 
     // 删除没有更新处理以外的路由
     private void deleteRoute(List<String> updateRouteIds) {
-        // 这里返回的是系统中所有的路由列表，包含 (文件定义，RouteLocatorBuilder定义，动态添加)
+        // 这里返回的是系统中所有的路由列表，包含 (文件定义，动态添加)
         // 所以处理删除的时候需要注意误删除
         try {
             routeDefinitionLocator.getRouteDefinitions()
+                .map(routeDefinition -> {
+                    try {
+                        log.debug("route -> {}", mapper.writeValueAsString(routeDefinition));
+                    } catch (JsonProcessingException e) {
+                        log.error("object to json error", e);
+                    }
+                    return routeDefinition;
+                })
                 .filter(routeDefinition -> StringUtils.isNotBlank(routeDefinition.getId()) && !updateRouteIds.contains(routeDefinition.getId()))
-                // 这一行是属于有点业务属性的意思了，不删除在配置文件里面配置的以 method 开头的路由id
-                .filter(routeDefinition -> !routeDefinition.getId().startsWith("method"))
                 .map(routeDefinition -> routeDefinition.getId())
+                // 这一行是属于有点业务属性的意思了，不删除在配置文件里面配置的以 method 开头的路由id
+                .filter(routeDefinitionId -> !routeDefinitionId.startsWith("method"))
                 .subscribe((id) -> {
                     log.debug("路由Id -> {}", id);
-                    // 如果未包含在该处理列表中的路由则删除
-                    this.routeDefinitionWriter.delete(Mono.just(id)).subscribe();
-                    log.debug("删除路由成功 -> {}", id);
+                    try {
+                        // 如果未包含在该处理列表中的路由则删除
+                        this.routeDefinitionWriter.delete(Mono.just(id)).subscribe();
+                        log.debug("删除路由成功 -> {}", id);
+                    } catch (Exception e) {
+                        log.error("删除路由失败 -> {} ", id, e);
+                    }
                 });
         } catch (Exception e) {
             log.error("删除不需要路由异常: ", e);

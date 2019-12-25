@@ -8,7 +8,6 @@ import com.alibaba.nacos.api.exception.NacosException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.liangyt.gateway.po.RouteDefinitionPO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +18,6 @@ import org.springframework.cloud.gateway.route.RouteDefinitionLocator;
 import org.springframework.cloud.gateway.route.RouteDefinitionWriter;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
-import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
@@ -164,8 +162,8 @@ public class DynamicGatewayRouteConfig implements ApplicationEventPublisherAware
     private List<String> routeHandle(String routeJson) {
         try {
             // 利用 jackson 转化为列表
-            JavaType type = mapper.getTypeFactory().constructCollectionType(List.class, RouteDefinitionPO.class);
-            List<RouteDefinitionPO> routes = mapper.readValue(routeJson, type);
+            JavaType type = mapper.getTypeFactory().constructCollectionType(List.class, RouteDefinition.class);
+            List<RouteDefinition> routes = mapper.readValue(routeJson, type);
 
             return updateRoute(routes);
         } catch (Exception e) {
@@ -178,7 +176,7 @@ public class DynamicGatewayRouteConfig implements ApplicationEventPublisherAware
      * 动态更新路由信息
      * @param routes
      */
-    private List<String> updateRoute(List<RouteDefinitionPO> routes) {
+    private List<String> updateRoute(List<RouteDefinition> routes) {
 
         if (null == routes || routes.size() == 0) {
             return Collections.EMPTY_LIST;
@@ -187,23 +185,13 @@ public class DynamicGatewayRouteConfig implements ApplicationEventPublisherAware
         // 文件中所有的路由id
         List<String> routeIds = new ArrayList<>();
 
-        RouteDefinitionPO routePo = null;
         for (int i = 0; i < routes.size(); i++) {
-            routePo = routes.get(i);
-            RouteDefinition definition = new RouteDefinition();
-
-            definition.setId(routePo.getId());
-            definition.setOrder(routePo.getOrder());
-            definition.setPredicates(routePo.getPredicates());
-            definition.setFilters(routePo.getFilters());
-
-            URI uri = UriComponentsBuilder.fromUriString(routePo.getUri()).build().toUri();
-            definition.setUri(uri);
+            RouteDefinition definition = routes.get(i);
 
             // 保存/更新路由
             this.routeDefinitionWriter.save(Mono.just(definition)).subscribe();
             this.applicationEventPublisher.publishEvent(new RefreshRoutesEvent(this));
-            log.debug("更新路由成功 -> {}", definition.getId());
+            log.debug("保存/更新路由成功 -> {}", definition.getId());
 
             routeIds.add(definition.getId());
         }

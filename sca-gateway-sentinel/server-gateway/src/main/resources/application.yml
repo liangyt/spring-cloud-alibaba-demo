@@ -1,0 +1,43 @@
+server:
+  port: 28080
+
+spring:
+  cloud:
+    gateway:
+      routes:
+      - id: method-get-route
+        uri: lb://nacos-consumer
+        predicates:
+        - Method=GET
+        filters:
+        - Custom # 使用自定义过滤器
+      - id: method-path-rout
+        uri: lb://nacos-consumer
+        predicates:
+        - Path=/json, /form
+        filters:
+        # 使用自定义过滤器
+        # 无传输参数
+        - Custom
+        # 简单参数，只有一个属性值
+        - CustomSimpleArgument=192.168.3.9
+        # gateway内部定义了一个抽象类，处理 k-v 类型的参数
+        - CustomKVArgument=限制的IP,192.168.3.10
+        # 这种是复杂传参的写法, 可以根据定义的入参类定义复杂的参数;如下就是有一个 List 属性(另外一种特殊是逗号分割)
+        - name: CustomComplexArgument
+          args:
+            ips:
+            - 192.168.3.11
+            - 192.168.3.12
+
+dynamic:
+  # 路由对应的配置在Nacos配置中心的文件 dataId
+  route-dataid: gateway-route.json
+  # 拉取 Sentinel 控制台配置的 发送到 nacos 的流控规则对应的 dataId group
+  consumer-sentinel-rule-dataid: server-gateway-flow-rules
+  consumer-sentinel-rule-group: SENTINEL_GROUP
+
+logging:
+  level:
+    com:
+      liangyt: DEBUG

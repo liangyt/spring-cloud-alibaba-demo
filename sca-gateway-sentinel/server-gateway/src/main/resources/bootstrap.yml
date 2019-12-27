@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: server-gateway
+  cloud:
+    nacos:
+      config:
+        namespace: c8a2cd88-1c7e-400a-b270-86f689979b8f # 建议配置在启动命令中，不要配置在文件中
+        server-addr: localhost:8848
+        # prefix: ${spring.application.name} # 这个值对应着 Nacos 配置中的 DataId 的前面部分 如 ex.properties 中的 ex,默认是是 spring.application.name 对应的值
+        # file-extension: properties # 这个值对应着 Nacos 配置中的 DataId 的后面部分 如 ex.properties 中的 properties 默认值 properties
+        group: DEFAULT_GROUP # 对应着 Nacos 配置中的 Group 的值，默认值是 DEFAULT_GROUP
+      discovery:
+        server-addr: localhost:8848
+        namespace: c8a2cd88-1c7e-400a-b270-86f689979b8f
+    sentinel:
+      transport:
+        port: 8721
+        dashboard: localhost:8080
+      # 日志根目录
+      log:
+        dir: logs/csp/

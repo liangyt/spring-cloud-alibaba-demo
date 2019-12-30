@@ -51,7 +51,7 @@ public class GatewaySentinelConfig {
     // 取配置的组
     @Value("${dynamic.consumer-sentinel-rule-group:SENTINEL_GROUP}")
     private String group;
-    // 路由存放的文件
+    // 规则存放的文件
     @Value("${dynamic.consumer-sentinel-rule-dataid:server-gateway-flow-rules}")
     private String ruleDataId;
 
@@ -144,6 +144,6 @@ public class GatewaySentinelConfig {
         );
         FlowRuleManager.register2Property(flowRuleDataSource.getProperty());
 
-        log.debug("开始初始化 Sentinel 规则");
+        log.debug("结束初始化 Sentinel 动态加载规则");
     }
 }

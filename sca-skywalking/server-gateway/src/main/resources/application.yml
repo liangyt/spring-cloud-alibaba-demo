@@ -1,0 +1,13 @@
+server:
+  port: 28080
+
+spring:
+  cloud:
+    gateway:
+      routes:
+      - id: method-get-route
+        uri: lb://nacos-consumer
+        predicates:
+        - Method=GET
+        filters:
+        - Custom # 使用自定义过滤器

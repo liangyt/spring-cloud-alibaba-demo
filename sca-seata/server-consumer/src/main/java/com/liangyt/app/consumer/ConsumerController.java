@@ -1,6 +1,6 @@
 package com.liangyt.app.consumer;
 
-import com.liangyt.app.info.service.impl.LevelServiceImpl;
+import com.liangyt.app.info.service.impl.OrderServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -13,11 +13,22 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 @RestController
 public class ConsumerController {
-    @Autowired
-    private LevelServiceImpl levelService;
 
-    @GetMapping("/addLevel")
-    public void list() {
-        levelService.test();
+    @Autowired
+    private OrderServiceImpl orderService;
+
+    @GetMapping("/test")
+    public void test() {
+        orderService.test();
+    }
+
+    @GetMapping("/ex")
+    public void ex() {
+        orderService.ex();
+    }
+
+    @GetMapping("/reentry")
+    public void normalToEx() {
+        orderService.normalToEx();
     }
 }

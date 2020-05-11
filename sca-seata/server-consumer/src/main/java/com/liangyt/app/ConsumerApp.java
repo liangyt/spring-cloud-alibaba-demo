@@ -12,10 +12,9 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
  * 作者：liangyongtong
  * 日期：2019/10/24 3:32 PM
  */
-@EnableDiscoveryClient // 开启服务发现客户端
-@EnableFeignClients // 开启扫描Spring Cloud Feign客户端的功能
-@SpringBootApplication(scanBasePackages = {"com.liangyt.app"}, exclude = DataSourceAutoConfiguration.class)
-//@EnableAutoDataSourceProxy
+@EnableDiscoveryClient
+@EnableFeignClients
+@SpringBootApplication(scanBasePackages = {"com.liangyt.app"})
 public class ConsumerApp {
     public static void main(String[] args) {
         SpringApplication.run(ConsumerApp.class, args);

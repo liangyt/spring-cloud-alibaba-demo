@@ -14,8 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable;
  */
 @FeignClient(
         name = "nacos-producer", // 服务名 也可以使用 value = "nacos-producer"
-        path = "/mybatis/info", // 这个值会拼接在下面的各请求的前面  如: /api/ok
-        fallback = LevelClientService.ProducerServiceFallback.class // 如果调用的方法异常无响应，则调用对应的备用方法; ()
+        path = "/mybatis/info" // 这个值会拼接在下面的各请求的前面  如: /api/ok
 )
 public interface LevelClientService {
 
@@ -27,6 +26,12 @@ public interface LevelClientService {
     void addLevel();
 
     /**
+     * 抛出异常方法
+     */
+    @GetMapping("/ex")
+    void ex();
+
+    /**
      * 获取级别
      * 结果：从其中一个数据源获取结果
      * @param code
@@ -35,17 +40,4 @@ public interface LevelClientService {
     @GetMapping("/getLevelByCode/{code}")
     Object getLevelByCode(@PathVariable("code") String code);
 
-    @Slf4j
-    @Component
-    class ProducerServiceFallback implements LevelClientService {
-        @Override
-        public void addLevel() {
-            log.error("异常");
-        }
-
-        @Override
-        public Object getLevelByCode(String code) {
-            return null;
-        }
-    }
 }

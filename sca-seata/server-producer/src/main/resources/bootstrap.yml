@@ -17,7 +17,7 @@ spring:
         group: DEFAULT_GROUP # 对应着 Nacos 配置中的 Group 的值，默认值是 DEFAULT_GROUP
         # 多文件加载以达到多个服务使用同一个配置文件，前提是这些服务都使用同一个 namespace
         # 如果有相同的key值，后面的文件中的值会把前面的文件中的key对应的value替换掉
-        ext-config:
+        shared-configs:
         - data-id: common-db.properties
           group: DEFAULT_GROUP
           refresh: true # 如果不配置这个值，不会动态刷新配置 默认值是 false

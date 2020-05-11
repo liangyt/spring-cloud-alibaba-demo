@@ -24,6 +24,14 @@ public class LevelServiceImpl extends ServiceImpl<LevelMapper, Level> implements
         level.setCode("0001");
         level.setName("默认级别");
         this.save(level);
-//        throw new RuntimeException("回滚");
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void throwException() {
+        Level level = new Level();
+        level.setCode("0002 ");
+        level.setName("异常");
+        this.save(level);
+        throw new RuntimeException("回滚");
     }
 }

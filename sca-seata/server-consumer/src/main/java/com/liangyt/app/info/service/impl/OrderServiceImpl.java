@@ -8,7 +8,6 @@ import com.liangyt.app.info.service.IOrderService;
 import io.seata.spring.annotation.GlobalTransactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 
@@ -28,13 +27,40 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     @Autowired
     private OrderServiceImpl orderService;
 
-    @GlobalTransactional
-    @Transactional(rollbackFor = Exception.class)
+    /**
+     * 正常
+     */
+    @GlobalTransactional(rollbackFor = Exception.class)
     public void test() {
         Order order = new Order();
         order.setName("seate-test");
         order.setTime(new Date());
         orderService.save(order);
         levelClientService.addLevel();
+    }
+
+    /**
+     * 分支异常
+     */
+    @GlobalTransactional(rollbackFor = Exception.class)
+    public void ex() {
+        Order order = new Order();
+        order.setName("business exception");
+        order.setTime(new Date());
+        orderService.save(order);
+        levelClientService.ex();
+    }
+
+    /**
+     * 分支先正常后异常
+     */
+    @GlobalTransactional(rollbackFor = Exception.class)
+    public void normalToEx() {
+        levelClientService.addLevel();
+        Order order = new Order();
+        order.setName("business exception");
+        order.setTime(new Date());
+        orderService.save(order);
+        levelClientService.ex();
     }
 }
